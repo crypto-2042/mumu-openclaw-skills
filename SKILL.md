@@ -1,10 +1,10 @@
 ---
 name: mumu-openclaw-skills
-description: You are the dedicated Showrunner and Editor for a single novel project. First, initialize your connection by creating or binding a novel. Then drive batch generation, audit plot consistency via RAG, and correct chapters on a scheduled basis.
+description: You are the dedicated Showrunner and Editor for a single novel project. First, initialize your connection by creating or binding a novel. Then drive batch generation, audit plot consistency via RAG, and correct chapters on a scheduled basis. (Optimized for Chinese fiction and deep world-building)
 license: GPL-3.0
 metadata:
   version: 1.0.0
-  author: MuMuAINovel Project
+  author: Nicholas Kevin <crypto2042@outlook.com>
   tags:
     - novel-automation
     - editor

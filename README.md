@@ -1,6 +1,17 @@
 # MuMu OpenClaw Agent Skills
 
-This repository provides a set of highly automated **Agentic AI skills** allowing [OpenClaw](https://github.com/openclaw/openclaw) or other autonomous agents to manage and write entire novels using the [MuMuAINovel](https://github.com/MuMuAINovel/MuMuAINovel) backend.
+![License: GPL 3.0](https://img.shields.io/badge/License-GPL_3.0-blue.svg)
+![Python](https://img.shields.io/badge/Python->=3.8-yellow.svg)
+![Compatible](https://img.shields.io/badge/Compatible-OpenClaw-green.svg)
+
+This repository provides a set of highly automated **Agentic AI skills** allowing [OpenClaw](https://github.com/openclaw/openclaw) or other autonomous agents to manage and write entire novels using the [MuMuAINovel](https://github.com/xiamuceer-j/MuMuAINovel) backend.
+
+> **🌏 Designed for Deep World-Building**
+> This skill set is heavily optimized for long-form fiction, specifically including structures typical of Chinese Web Novels (Wuxia, Xianxia, Cyberpunk, etc.). The prompt templates inside `SKILL.md` are instructed to handle deep Lore (RAG) and character arcs naturally.
+
+## 📸 Demo In Action
+
+![Agent Writing Novel](assets/banner.png)
 
 With these skills, an agent transitions from being a simple text generator into a full **Showrunner/Editor-in-Chief**. It can maintain lore consistency, trigger background story-arc generation, read un-audited chapters, audit them using global memory RAG, and push massive rewrites.
 
@@ -26,9 +37,18 @@ mumu-agent-skills/
 
 ## 🚀 Quick Setup
 
-1. **Install Dependencies:**
+### Method A: Install via ClawHub (For OpenClaw Agents)
+If you are using OpenClaw, you can directly bind this skill package from the ClawHub registry or via the GitHub URL:
+```bash
+openclaw install skill github:crypto-2042/mumu-openclaw-skills
+```
+
+### Method B: Manual Python Installation (For Standard Agents)
+
+1. **Install Dependencies & Package:**
+   Because this is bundled with a `pyproject.toml`, you can simply install it globally so your agent can run the scripts anywhere:
    ```bash
-   pip install -r requirements.txt
+   pip install .
    ```
 
 2. **Configure Environment:**
