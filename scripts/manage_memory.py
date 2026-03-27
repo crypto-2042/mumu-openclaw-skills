@@ -1,6 +1,12 @@
 import argparse
 from client import MumuClient
 
+def build_foreshadow_title(content: str) -> str:
+    cleaned = " ".join(content.strip().split())
+    if not cleaned:
+        return "手动伏笔"
+    return cleaned[:60]
+
 def main():
     parser = argparse.ArgumentParser(description="Manage RAG Memory and Foreshadows")
     parser.add_argument("--action", required=True, choices=["add_foreshadow"], help="Action to perform")
@@ -18,7 +24,12 @@ def main():
     
     try:
         if args.action == "add_foreshadow":
-            data = {"project_id": client.project_id, "content": args.content, "status": "pending"}
+            data = {
+                "project_id": client.project_id,
+                "title": build_foreshadow_title(args.content),
+                "content": args.content,
+                "status": "pending",
+            }
             client.post("foreshadows", json_data=data)
             print("Foreshadow added successfully.")
             

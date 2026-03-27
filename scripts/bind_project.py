@@ -1,7 +1,63 @@
 import json
 import argparse
 import sys
+import time
 from client import MumuClient
+
+WIZARD_STAGES = {
+    0: "world_building",
+    1: "career_system",
+    2: "characters",
+    3: "outline",
+}
+
+
+def get_wizard_stage_label(project):
+    if is_project_ready(project):
+        return "completed"
+    step = int(project.get("wizard_step") or 0)
+    return WIZARD_STAGES.get(step, "unknown")
+
+
+def is_project_ready(project):
+    status = (project.get("wizard_status") or "").lower()
+    step = int(project.get("wizard_step") or 0)
+    return status == "completed" and step >= 4
+
+
+def get_next_wizard_action(project):
+    if is_project_ready(project):
+        return None
+
+    step = int(project.get("wizard_step") or 0)
+    if step <= 1:
+        return "career-system"
+    if step == 2:
+        return "characters"
+    if step in (2, 3):
+        return "outline"
+    return None
+
+
+def emit_project_status(project, json_mode=False):
+    payload = {
+        "project_id": project.get("id"),
+        "title": project.get("title"),
+        "wizard_status": project.get("wizard_status"),
+        "wizard_step": project.get("wizard_step"),
+        "stage": get_wizard_stage_label(project),
+        "ready": is_project_ready(project),
+        "next_action": get_next_wizard_action(project),
+    }
+    if json_mode:
+        print(json.dumps(payload, ensure_ascii=False))
+        return
+
+    print("=== Project Status ===")
+    for key, value in payload.items():
+        print(f"{key}: {value}")
+    print("======================")
+
 
 def wait_for_sse(resp, step_name):
     print(f"--- Running: {step_name} ---")
@@ -31,15 +87,82 @@ def wait_for_sse(resp, step_name):
         resp.close()
     return final_result
 
+
+def fetch_project(client, project_id):
+    return client.get(f"projects/{project_id}")
+
+
+def run_world_building_stage(client, args):
+    data = {
+        "title": args.title,
+        "description": args.description,
+        "theme": args.theme,
+        "genre": args.genre,
+        "narrative_perspective": "第三人称",
+        "target_words": 1000000,
+        "chapter_count": 5,
+        "character_count": 5,
+        "outline_mode": "one-to-many",
+    }
+    resp = client.post("wizard-stream/world-building", json_data=data, stream=True)
+    result = wait_for_sse(resp, "World Building")
+    new_id = result.get("project_id") if result else None
+    if not new_id:
+        raise RuntimeError("Failed to get project_id from World Building")
+    client.set_project_id(new_id)
+    return fetch_project(client, new_id)
+
+
+def run_next_stage(client, project, theme=None, genre=None):
+    project_id = project["id"]
+    next_action = get_next_wizard_action(project)
+    if not next_action:
+        return project
+
+    if next_action == "career-system":
+        resp = client.post("wizard-stream/career-system", json_data={"project_id": project_id}, stream=True)
+        wait_for_sse(resp, "Career System")
+    elif next_action == "characters":
+        resp = client.post(
+            "wizard-stream/characters",
+            json_data={
+                "project_id": project_id,
+                "count": 5,
+                "theme": theme or project.get("theme"),
+                "genre": genre or project.get("genre"),
+            },
+            stream=True,
+        )
+        wait_for_sse(resp, "Characters")
+    elif next_action == "outline":
+        resp = client.post(
+            "wizard-stream/outline",
+            json_data={
+                "project_id": project_id,
+                "chapter_count": 5,
+                "narrative_perspective": "第三人称",
+                "target_words": 1000000,
+            },
+            stream=True,
+        )
+        wait_for_sse(resp, "Outline")
+    else:
+        raise RuntimeError(f"Unknown wizard action: {next_action}")
+
+    return fetch_project(client, project_id)
+
 def main():
     parser = argparse.ArgumentParser(description="Bind or Create a Novel Project")
-    parser.add_argument("--action", required=True, choices=["create", "list", "bind", "list-styles", "bind-style"], help="Action: manage projects or bind writing styles")
+    parser.add_argument("--action", required=True, choices=["create", "status", "wait", "resume", "ready", "list", "bind", "list-styles", "bind-style"], help="Action: manage projects or bind writing styles")
     parser.add_argument("--title", type=str, help="Title of the new novel (for create)")
     parser.add_argument("--description", type=str, help="Description/Synopsis of the novel (for create)")
     parser.add_argument("--theme", type=str, help="Theme of the novel (for create) e.g. 奋斗、复仇")
     parser.add_argument("--genre", type=str, help="Genre of the novel (for create) e.g. 科幻、修仙")
     parser.add_argument("--project_id", type=str, help="The project ID to bind (for bind)")
     parser.add_argument("--style_id", type=str, help="The writing style ID to bind (for bind-style)")
+    parser.add_argument("--timeout", type=int, default=300, help="Maximum seconds to wait when using wait")
+    parser.add_argument("--interval", type=int, default=5, help="Polling interval in seconds for wait")
+    parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON for status-style actions")
     
     args = parser.parse_args()
     client = MumuClient(project_id=getattr(args, 'project_id', None), style_id=getattr(args, 'style_id', None))
@@ -48,56 +171,71 @@ def main():
         if not args.title or not args.theme or not args.genre or not args.description:
             print("Error: --title, --description, --theme, and --genre are all required for create action.")
             return
-        print(f"Creating a new project: {args.title} and running AI initialization wizard...")
+        print(f"Creating a new project: {args.title} and starting the first initialization stage...")
         try:
-            # 1. World Building
-            data = {
-                "title": args.title, 
-                "description": args.description,
-                "theme": args.theme,
-                "genre": args.genre,
-                "narrative_perspective": "第三人称",
-                "target_words": 1000000,
-                "chapter_count": 5,
-                "character_count": 5,
-                "outline_mode": "one-to-many"
-            }
-            resp = client.post("wizard-stream/world-building", json_data=data, stream=True)
-            res1 = wait_for_sse(resp, "World Building")
-            new_id = res1.get("project_id") if res1 else None
-            if not new_id:
-                print("Failed to get project_id from World Building!")
-                return
-            
-            print(f"Project created with ID: {new_id}")
-            
-            # 2. Career System
-            resp2 = client.post("wizard-stream/career-system", json_data={"project_id": new_id}, stream=True)
-            wait_for_sse(resp2, "Career System")
-            
-            # 3. Characters
-            resp3 = client.post("wizard-stream/characters", json_data={
-                "project_id": new_id, 
-                "count": 5,
-                "theme": args.theme,
-                "genre": args.genre
-            }, stream=True)
-            wait_for_sse(resp3, "Characters")
-            
-            # 4. Outline
-            resp4 = client.post("wizard-stream/outline", json_data={
-                "project_id": new_id,
-                "chapter_count": 5,
-                "narrative_perspective": "第三人称",
-                "target_words": 1000000
-            }, stream=True)
-            wait_for_sse(resp4, "Outline")
-
-            # 自动持久化并提示该 Agent 未来使用此 ID
-            client.set_project_id(new_id)
-            print("Successfully bound this Agent to the new novel project.")
+            project = run_world_building_stage(client, args)
+            print(f"Project created with ID: {project.get('id')}")
+            print("World building finished. Use `--action resume --project_id <ID>` to continue the next stage, or `--action status` to inspect progress.")
+            emit_project_status(project, json_mode=args.json)
         except Exception as e:
             print(f"Failed to create project: {e}")
+
+    elif args.action == "status":
+        if not args.project_id:
+            print("Error: --project_id is required for status action.")
+            return
+        try:
+            emit_project_status(fetch_project(client, args.project_id), json_mode=args.json)
+        except Exception as e:
+            print(f"Failed to fetch project status: {e}")
+
+    elif args.action == "wait":
+        if not args.project_id:
+            print("Error: --project_id is required for wait action.")
+            return
+        deadline = time.monotonic() + args.timeout
+        try:
+            while True:
+                project = fetch_project(client, args.project_id)
+                if is_project_ready(project):
+                    emit_project_status(project, json_mode=args.json)
+                    return
+                if time.monotonic() >= deadline:
+                    print(f"Initialization is still in progress after {args.timeout} seconds.")
+                    emit_project_status(project, json_mode=args.json)
+                    return
+                time.sleep(args.interval)
+        except Exception as e:
+            print(f"Failed while waiting for project readiness: {e}")
+
+    elif args.action == "resume":
+        if not args.project_id:
+            print("Error: --project_id is required for resume action.")
+            return
+        try:
+            project = fetch_project(client, args.project_id)
+            if is_project_ready(project):
+                print("Project initialization is already complete.")
+                emit_project_status(project, json_mode=args.json)
+                return
+            print(f"Resuming initialization for project {args.project_id} from stage {get_wizard_stage_label(project)}...")
+            project = run_next_stage(client, project, theme=args.theme, genre=args.genre)
+            emit_project_status(project, json_mode=args.json)
+        except Exception as e:
+            print(f"Failed to resume initialization: {e}")
+
+    elif args.action == "ready":
+        if not args.project_id:
+            print("Error: --project_id is required for ready action.")
+            return
+        try:
+            project = fetch_project(client, args.project_id)
+            if args.json:
+                print(json.dumps({"project_id": args.project_id, "ready": is_project_ready(project)}, ensure_ascii=False))
+            else:
+                print("READY" if is_project_ready(project) else "NOT_READY")
+        except Exception as e:
+            print(f"Failed to check project readiness: {e}")
             
     elif args.action == "list":
         print("Fetching your existing novel projects...")

@@ -20,8 +20,19 @@ Initialization flow:
   `python scripts/bind_project.py --action list`
 - To create a project:
   `python scripts/bind_project.py --action create --title "<Title>" --description "<Plot>" --theme "<Theme>" --genre "<Genre>"`
+  This only runs the first initialization stage.
 - To list writing styles:
   `python scripts/bind_project.py --action list-styles`
+- To inspect initialization progress:
+  `python scripts/bind_project.py --action status --project_id <Your ID> --json`
+- To resume the next initialization stage:
+  `python scripts/bind_project.py --action resume --project_id <Your ID>`
+- To wait with a timeout:
+  `python scripts/bind_project.py --action wait --project_id <Your ID> --timeout 60 --interval 5`
+- To confirm readiness:
+  `python scripts/bind_project.py --action ready --project_id <Your ID>`
+
+Do not enter the routine workflow until the project reports ready.
 
 Routine workflow:
 
@@ -44,6 +55,7 @@ Routine workflow:
 
 Review policy:
 
+- Treat initialization as a stage-based workflow, not a single blocking command.
 - Run `analyze_chapter.py` before approving or rewriting when continuity risk is non-trivial.
 - Prefer direct `--content` input for rewrites over temporary files.
 - If a script returns identifiers needed later, memorize them and reuse them explicitly.

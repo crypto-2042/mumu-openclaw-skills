@@ -104,14 +104,47 @@ Claude Code does not read OpenClaw skills directly. Its native extension points 
    source .env
    set +a
    ```
-   *Note: OpenClaw can inject skill env vars directly, so `.env` export is mainly for manual shell usage. From version 1.0.2 onwards, Agents are expected to memorize their `Project ID` and `Style ID` intrinsically and pass them via the `--project_id` and `--style_id` flags to support concurrent multi-agent executions in the same workspace. Login cookies are kept in-process by default; if your runtime provides a safe writable path, you can opt into persistence with `MUMU_SESSION_FILE=/safe/path/session.json`.*
+   *Note: OpenClaw can inject skill env vars directly, so `.env` export is mainly for manual shell usage. From version 1.0.3 onwards, Agents are expected to memorize their `Project ID` and `Style ID` intrinsically and pass them via the `--project_id` and `--style_id` flags to support concurrent multi-agent executions in the same workspace. Login cookies are kept in-process by default; if your runtime provides a safe writable path, you can opt into persistence with `MUMU_SESSION_FILE=/safe/path/session.json`.*
+
+## ⏳ Stage-Based Initialization
+
+MuMuAINovel project initialization is a long-running, stage-based workflow. The `create` action no longer waits for world building, career system, characters, and outline generation to all finish in one blocking command.
+
+Use the initialization actions like this:
+
+1. Start project creation and the first stage:
+   ```bash
+   python scripts/bind_project.py --action create \
+     --title "Project Title" \
+     --description "Synopsis" \
+     --theme "成长" \
+     --genre "科幻"
+   ```
+2. Inspect current progress:
+   ```bash
+   python scripts/bind_project.py --action status --project_id <PROJECT_ID> --json
+   ```
+3. Resume the next initialization stage:
+   ```bash
+   python scripts/bind_project.py --action resume --project_id <PROJECT_ID>
+   ```
+4. Wait for readiness with a bounded timeout:
+   ```bash
+   python scripts/bind_project.py --action wait --project_id <PROJECT_ID> --timeout 60 --interval 5 --json
+   ```
+5. Check if initialization is fully complete:
+   ```bash
+   python scripts/bind_project.py --action ready --project_id <PROJECT_ID>
+   ```
+
+Do not move on to batch generation, chapter auditing, or rewrite flows until the project reports `ready`.
 
 ## 🤖 How the Agent "Lives" (Workflow)
 
 If you are setting up an OpenClaw Agent, simply attach `SKILL.md` to its initialization prompt. The agent will execute following these guidelines:
 
 ### Phase 1: Creation & Binding
-The AI creates a new fictional universe (world building, career paths, character sheets) securely pinning them to its prompt memory context instead of a global `.env`.
+The AI creates a new fictional universe in multiple stages, securely pinning the resulting `project_id` into prompt memory context instead of a global `.env`.
 ```bash
 # Example action the agent will run:
 python scripts/bind_project.py --action create \
@@ -121,8 +154,16 @@ python scripts/bind_project.py --action create \
   --genre "Sci-Fi"
 ```
 
+Then it keeps resuming initialization until the project is ready:
+```bash
+python scripts/bind_project.py --action status --project_id <Your ID> --json
+python scripts/bind_project.py --action resume --project_id <Your ID>
+python scripts/bind_project.py --action wait --project_id <Your ID> --timeout 60 --interval 5 --json
+python scripts/bind_project.py --action ready --project_id <Your ID>
+```
+
 ### Phase 2: The Writing Loop (Infinite Generation)
-Once the novel is bound, the agent will loop the following cognitive steps ad-infinitum:
+Once the novel is initialized and ready, the agent will loop the following cognitive steps ad-infinitum:
 
 1. **Check Loose Ends:** 
    `python scripts/check_foreshadows.py --project_id <Your ID> --action list-pending`
