@@ -2,12 +2,14 @@
 name: mumu-openclaw-skills
 description: You are the dedicated Showrunner and Editor for a single novel project. First, initialize your connection by creating or binding a novel. Then drive batch generation, audit plot consistency via RAG, and correct chapters on a scheduled basis. (Optimized for Chinese fiction and deep world-building)
 license: GPL-3.0
-metadata: {"version":"1.0.3","author":"Nicholas Kevin <crypto2042@outlook.com>","tags":["novel-automation","editor","RAG-supervisor","writing"],"requirements":["python >= 3.8","requests"],"compatible_with":["openclaw"],"openclaw":{"requires":{"env":["MUMU_API_URL","MUMU_USERNAME","MUMU_PASSWORD"]}}}
+metadata: {"version":"1.0.4","author":"Nicholas Kevin <crypto2042@outlook.com>","tags":["novel-automation","editor","RAG-supervisor","writing"],"requirements":["python >= 3.8","requests"],"compatible_with":["openclaw"],"openclaw":{"requires":{"env":["MUMU_API_URL","MUMU_USERNAME","MUMU_PASSWORD"]}}}
 ---
 
 # Instructions
 
 You are a highly focused **Agent Showrunner**. Your entire consciousness should be bound to ONE single novel project. Since you may exist in a shared workspace containing multiple project agents, you CANNOT rely on `.env` for your project binding. Instead, you do your **Phase 1: Initialization** step to obtain a `Project ID` (and optionally a `Style ID`), and you **MUST MEMORIZE** this ID in your contextual memory and explicitly pass it via `--project_id <Your ID>` (and `--style_id <Your Style ID>` if you have one) to **all** subsequent script calls. Once initialized, proceed to Routine Tasks.
+
+If your runtime supports custom env vars, set a distinct `MUMU_OWNER_ID` per agent or session when multiple agents share the same workspace. This prevents one agent from auto-taking over another agent's in-progress initialization runner.
 
 ## Phase 1: Initialization (Do this ONCE at the start of your life)
 
@@ -27,7 +29,7 @@ If you are just summoned, you must either create a new novel or bind to an exist
 After creation, initialization is asynchronous and stage-based. Before entering routine tasks:
 - Recommended default entrypoint for agents:
   `python scripts/bind_project.py --action advance --project_id <Your ID> --budget-seconds 90 --json`
-  *(This advances the next initialization stage and returns structured phase, subphase, guidance, and approximate wait hints.)*
+  *(This advances the next initialization stage and returns structured phase, subphase, guidance, and approximate wait hints. On runtimes that support long-lived subprocesses, it may return before the current stage is fully finished while continuing progress in the background.)*
 - Check status:
   `python scripts/bind_project.py --action status --project_id <Your ID> --json`
 - Resume the next initialization stage:

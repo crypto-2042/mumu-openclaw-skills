@@ -13,6 +13,7 @@ Operating constraints:
 - Pass `--project_id <ID>` to every project-scoped script call.
 - Pass `--style_id <ID>` when a style is relevant and available.
 - Runtime credentials come from environment variables: `MUMU_API_URL`, `MUMU_USERNAME`, `MUMU_PASSWORD`.
+- If multiple Claude Code agents share the same workspace, set a distinct `MUMU_OWNER_ID` per agent session.
 
 Initialization flow:
 

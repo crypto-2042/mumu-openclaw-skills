@@ -4,7 +4,7 @@
 ![Python](https://img.shields.io/badge/Python->=3.8-yellow.svg)
 ![Compatible](https://img.shields.io/badge/Compatible-OpenClaw%20%7C%20Codex-green.svg)
 
-This repository provides a set of highly automated **Agentic AI skills** allowing [OpenClaw](https://github.com/openclaw/openclaw) or other autonomous agents to manage and write entire novels using the [MuMuAINovel](https://github.com/xiamuceer-j/MuMuAINovel) backend.
+This repository provides a set of highly automated **Agentic AI skills** allowing [OpenClaw](https://github.com/openclaw/openclaw), ClawHub, Codex, or Claude Code to manage and write entire novels using the [MuMuAINovel](https://github.com/xiamuceer-j/MuMuAINovel) backend.
 
 > **🌏 Designed for Deep World-Building**
 > This skill set is heavily optimized for long-form fiction, specifically including structures typical of Chinese Web Novels (Wuxia, Xianxia, Cyberpunk, etc.). The prompt templates inside `SKILL.md` are instructed to handle deep Lore (RAG) and character arcs naturally.
@@ -19,7 +19,7 @@ With these skills, an agent transitions from being a simple text generator into 
 
 | Runtime | Status | Notes |
 | --- | --- | --- |
-| OpenClaw / ClawHub | Directly supported | `SKILL.md` contains OpenClaw metadata and required env declarations. |
+| OpenClaw / ClawHub | Directly supported | `SKILL.md` contains OpenClaw metadata and required env declarations. ClawHub install command: `clawhub install mumuai-novel-skills`. |
 | Codex | Directly supported | Codex supports skills and the Agent Skills open standard; this repo already follows the `SKILL.md` + supporting files pattern. |
 | Claude Code | Supported via adapter | The repository includes a Claude Code project subagent adapter at `.claude/agents/mumu-showrunner.md`. |
 
@@ -44,10 +44,22 @@ mumu-openclaw-skills/
 
 ## 🚀 Quick Setup
 
-### Method A: Install via ClawHub (For OpenClaw Agents)
-If you are using OpenClaw, you can directly bind this skill package from the ClawHub registry or via the GitHub URL:
+### Method A: Install via ClawHub (Recommended for OpenClaw Agents)
+If you are using OpenClaw through ClawHub, install the published package directly:
 ```bash
-openclaw install skill github:crypto-2042/mumu-openclaw-skills
+clawhub install mumuai-novel-skills
+```
+
+After installation, make sure the runtime provides:
+```bash
+export MUMU_API_URL="https://your-mumu-host"
+export MUMU_USERNAME="your-account"
+export MUMU_PASSWORD="your-password"
+```
+
+If you run multiple agents in the same shared workspace, also set a distinct owner ID per agent or session so runtime progress files are not mistaken for each other:
+```bash
+export MUMU_OWNER_ID="novel-agent-a"
 ```
 
 ### Method B: Use in Codex
@@ -63,6 +75,10 @@ Codex supports skills, and OpenAI states that ChatGPT/Codex skills follow the Ag
    export MUMU_API_URL="https://your-mumu-host"
    export MUMU_USERNAME="your-account"
    export MUMU_PASSWORD="your-password"
+   ```
+   If multiple Codex agents may work from the same workspace, also set:
+   ```bash
+   export MUMU_OWNER_ID="codex-agent-a"
    ```
 3. Install or link this repository into your Codex skills environment, then invoke the skill from Codex.
 
@@ -81,6 +97,10 @@ Claude Code does not read OpenClaw skills directly. Its native extension points 
    export MUMU_API_URL="https://your-mumu-host"
    export MUMU_USERNAME="your-account"
    export MUMU_PASSWORD="your-password"
+   ```
+   If multiple Claude Code agents may share the same workspace, also set:
+   ```bash
+   export MUMU_OWNER_ID="claude-agent-a"
    ```
 3. In Claude Code, invoke the `mumu-showrunner` subagent for novel project initialization, batch generation, auditing, and rewrite flows.
 4. If you want persistent login-cookie reuse across calls and your environment provides a safe writable path, also export:
@@ -104,7 +124,7 @@ Claude Code does not read OpenClaw skills directly. Its native extension points 
    source .env
    set +a
    ```
-   *Note: OpenClaw can inject skill env vars directly, so `.env` export is mainly for manual shell usage. From version 1.0.3 onwards, Agents are expected to memorize their `Project ID` and `Style ID` intrinsically and pass them via the `--project_id` and `--style_id` flags to support concurrent multi-agent executions in the same workspace. Login cookies are kept in-process by default; if your runtime provides a safe writable path, you can opt into persistence with `MUMU_SESSION_FILE=/safe/path/session.json`.*
+   *Note: OpenClaw can inject skill env vars directly, so `.env` export is mainly for manual shell usage. From version 1.0.4 onwards, agents are expected to memorize their `Project ID` and `Style ID` intrinsically and pass them via the `--project_id` and `--style_id` flags to support concurrent multi-agent executions in the same workspace. Login cookies are kept in-process by default; if your runtime provides a safe writable path, you can opt into persistence with `MUMU_SESSION_FILE=/safe/path/session.json`. If multiple agents share one workspace, set a distinct `MUMU_OWNER_ID` for each agent so `.mumu_runtime/` state files are not treated as reusable by another agent.*
 
 ## ⏳ Stage-Based Initialization
 
@@ -128,7 +148,7 @@ Use the initialization actions like this:
    ```bash
    python scripts/bind_project.py --action advance --project_id <PROJECT_ID> --budget-seconds 90 --json
    ```
-   This returns structured `phase`, `subphase`, `message`, `recommended_wait_seconds`, and `estimated_remaining_minutes` fields. The ETA fields are approximate heuristics, not guarantees.
+   This returns structured `phase`, `subphase`, `message`, `recommended_wait_seconds`, and `estimated_remaining_minutes` fields. The ETA fields are approximate heuristics, not guarantees. On runtimes that support long-lived subprocesses, `advance` can return early while the current initialization stage continues in the background.
 4. Resume the next initialization stage directly when you want lower-level control:
    ```bash
    python scripts/bind_project.py --action resume --project_id <PROJECT_ID>
@@ -143,6 +163,13 @@ Use the initialization actions like this:
    ```
 
 Do not move on to batch generation, chapter auditing, or rewrite flows until the project reports `ready`.
+
+## 🔀 Multi-Agent Notes
+
+- `project_id` and optional `style_id` must be treated as agent-local memory, not global workspace state.
+- Runtime initialization progress is written to `.mumu_runtime/` and is intentionally ignored by git.
+- If multiple agents share one checkout, give each agent a distinct `MUMU_OWNER_ID`. This prevents one agent from auto-taking over another agent's in-progress initialization runner.
+- `advance` is the recommended high-level initialization entrypoint. `status`, `resume`, and `wait` are lower-level controls for debugging or manual orchestration.
 
 ## 🤖 How the Agent "Lives" (Workflow)
 
