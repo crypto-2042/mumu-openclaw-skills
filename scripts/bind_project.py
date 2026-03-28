@@ -29,6 +29,7 @@ WAIT_HINTS = {
     "outline": (60, 3),
     "character_enrichment": (45, 2),
     "organization_enrichment": (60, 3),
+    "external": (60, 3),
     "done": (0, 0),
 }
 
@@ -94,6 +95,8 @@ def build_advance_status(project, progress_state=None):
         if progress_state:
             subphase = progress_state.get("subphase") or subphase
             message = progress_message_from_state(progress_state) or message
+            if progress_state.get("status") == "external":
+                message = f"Another agent ({progress_state.get('owner_id')}) is already advancing this project."
 
     recommended_wait_seconds, estimated_remaining_minutes = get_eta_hint(phase, subphase)
     return {
@@ -113,10 +116,12 @@ def build_advance_status(project, progress_state=None):
     }
 
 
-def build_runtime_payload(project, progress_state, status, pid=None):
+def build_runtime_payload(project, progress_state, status, pid=None, runner_id=None):
     return {
         "project_id": project.get("id"),
         "title": project.get("title"),
+        "owner_id": runtime_state.get_owner_id(),
+        "runner_id": runner_id or runtime_state.new_runner_id(),
         "status": status,
         "phase": get_wizard_stage_label(project),
         "subphase": (progress_state or {}).get("subphase", "pending"),
@@ -133,6 +138,9 @@ def load_runtime_snapshot(project_id):
     state = runtime_state.load_state(project_id)
     if not state:
         return None
+    if state.get("owner_id") and state.get("owner_id") != runtime_state.get_owner_id():
+        state["status"] = "external"
+        return state
     if state.get("status") == "running" and runtime_state.is_stale(state, stale_after_seconds=RUNTIME_STALE_SECONDS):
         state["status"] = "stale"
     return state
@@ -360,9 +368,10 @@ def spawn_stage_runner(project_id, theme=None, genre=None):
 def run_stage_background(client, project_id, theme=None, genre=None):
     project = fetch_project(client, project_id)
     runtime = load_runtime_snapshot(project_id)
-    if runtime and runtime.get("status") == "running":
+    if runtime and runtime.get("status") in {"running", "external"}:
         return project, runtime
 
+    runner_id = runtime_state.new_runner_id()
     pid = spawn_stage_runner(project_id, theme=theme, genre=genre)
     runtime = runtime_state.save_state(
         project_id,
@@ -375,6 +384,7 @@ def run_stage_background(client, project_id, theme=None, genre=None):
             },
             status="running",
             pid=pid,
+            runner_id=runner_id,
         ),
     )
     return project, runtime
@@ -382,11 +392,13 @@ def run_stage_background(client, project_id, theme=None, genre=None):
 
 def execute_stage_runner(client, project_id, theme=None, genre=None):
     project = fetch_project(client, project_id)
+    existing = runtime_state.load_state(project_id)
+    runner_id = (existing or {}).get("runner_id") or runtime_state.new_runner_id()
 
     def persist(progress_state):
         runtime_state.save_state(
             project_id,
-            build_runtime_payload(project, progress_state, status="running", pid=os.getpid()),
+            build_runtime_payload(project, progress_state, status="running", pid=os.getpid(), runner_id=runner_id),
         )
 
     runtime_state.save_state(
@@ -400,6 +412,7 @@ def execute_stage_runner(client, project_id, theme=None, genre=None):
             },
             status="running",
             pid=os.getpid(),
+            runner_id=runner_id,
         ),
     )
 
@@ -413,7 +426,7 @@ def execute_stage_runner(client, project_id, theme=None, genre=None):
         )
         runtime_state.save_state(
             project_id,
-            build_runtime_payload(updated_project, progress_state, status="completed", pid=os.getpid()),
+            build_runtime_payload(updated_project, progress_state, status="completed", pid=os.getpid(), runner_id=runner_id),
         )
     except Exception as exc:
         runtime_state.save_state(
@@ -427,6 +440,7 @@ def execute_stage_runner(client, project_id, theme=None, genre=None):
                 },
                 status="failed",
                 pid=os.getpid(),
+                runner_id=runner_id,
             ),
         )
         raise
@@ -517,6 +531,9 @@ def main():
             return
         try:
             project, runtime = run_stage_background(client, args.project_id, theme=args.theme, genre=args.genre)
+            if runtime and runtime.get("status") == "external":
+                emit_advance_status(project, progress_state=runtime, json_mode=args.json)
+                return
             runtime = wait_for_runtime_snapshot(
                 args.project_id,
                 initial_updated_at=runtime.get("updated_at") if runtime else None,

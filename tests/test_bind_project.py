@@ -149,6 +149,72 @@ class BindProjectWizardStateTests(unittest.TestCase):
                 loaded["updated_at"] = time.time() - 600
                 self.assertTrue(runtime_state.is_stale(loaded, stale_after_seconds=300))
 
+    def test_runtime_state_includes_owner_and_runner(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with mock.patch.dict(
+                "os.environ",
+                {"MUMU_RUNTIME_DIR": tmpdir, "MUMU_OWNER_ID": "agent-a"},
+            ):
+                saved = runtime_state.save_state(
+                    "project-1",
+                    {
+                        "project_id": "project-1",
+                        "runner_id": "runner-1",
+                        "status": "running",
+                    },
+                )
+
+                self.assertEqual(saved["owner_id"], "agent-a")
+                self.assertEqual(saved["runner_id"], "runner-1")
+
+    def test_load_runtime_snapshot_marks_foreign_owner_as_external(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with mock.patch.dict(
+                "os.environ",
+                {"MUMU_RUNTIME_DIR": tmpdir, "MUMU_OWNER_ID": "agent-b"},
+            ):
+                runtime_state.save_state(
+                    "project-1",
+                    {
+                        "project_id": "project-1",
+                        "owner_id": "agent-a",
+                        "runner_id": "runner-1",
+                        "status": "running",
+                        "updated_at": time.time(),
+                    },
+                )
+
+                loaded = bind_project.load_runtime_snapshot("project-1")
+
+                self.assertEqual(loaded["status"], "external")
+                self.assertEqual(loaded["owner_id"], "agent-a")
+
+    def test_build_runtime_payload_records_owner_and_runner(self):
+        project = {
+            "id": "project-1",
+            "title": "Test",
+            "wizard_status": "incomplete",
+            "wizard_step": 1,
+        }
+        progress_state = {
+            "subphase": "generating",
+            "message": "生成职业体系中...",
+            "progress": 42,
+        }
+
+        with mock.patch.dict("os.environ", {"MUMU_OWNER_ID": "agent-a"}):
+            payload = bind_project.build_runtime_payload(
+                project,
+                progress_state,
+                status="running",
+                pid=1234,
+                runner_id="runner-1",
+            )
+
+        self.assertEqual(payload["owner_id"], "agent-a")
+        self.assertEqual(payload["runner_id"], "runner-1")
+        self.assertEqual(payload["pid"], 1234)
+
 
 if __name__ == "__main__":
     unittest.main()
