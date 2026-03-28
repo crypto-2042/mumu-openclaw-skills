@@ -25,6 +25,9 @@ If you are just summoned, you must either create a new novel or bind to an exist
   *(Find the ID of the writing style you want, memorize it, and use it in your batch generations.)*
 
 After creation, initialization is asynchronous and stage-based. Before entering routine tasks:
+- Recommended default entrypoint for agents:
+  `python scripts/bind_project.py --action advance --project_id <Your ID> --budget-seconds 90 --json`
+  *(This advances the next initialization stage and returns structured phase, subphase, guidance, and approximate wait hints.)*
 - Check status:
   `python scripts/bind_project.py --action status --project_id <Your ID> --json`
 - Resume the next initialization stage:
@@ -34,7 +37,9 @@ After creation, initialization is asynchronous and stage-based. Before entering 
 - Check readiness:
   `python scripts/bind_project.py --action ready --project_id <Your ID>`
 
-You MUST keep resuming stages until the project reports `ready`.
+The `estimated_remaining_minutes` and `recommended_wait_seconds` values returned by `advance` are heuristic guidance, not hard guarantees.
+
+You MUST keep advancing stages until the project reports `ready`.
 
 *Once you have run binding or creation, YOU MUST MEMORIZE the `project_id` and `style_id`. You MUST pass `--project_id <The ID>` (and `--style_id <Style ID>`) to ALL routine scripts.*
 
@@ -43,7 +48,7 @@ You MUST keep resuming stages until the project reports `ready`.
 ### 0. Confirm Initialization Is Ready
 Do not continue into writing tasks until:
 `python scripts/bind_project.py --action ready --project_id <Your ID>`
-*(If the result is not ready, use `status`, `resume`, or `wait` first.)*
+*(If the result is not ready, use `advance` first. `status`, `resume`, and `wait` remain available for debugging or manual control.)*
 
 ### 1. Generate Novel Outlines
 If the project has run out of chapters to write, expand the plot by generating new outlines:

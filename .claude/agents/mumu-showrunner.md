@@ -25,6 +25,9 @@ Initialization flow:
   `python scripts/bind_project.py --action list-styles`
 - To inspect initialization progress:
   `python scripts/bind_project.py --action status --project_id <Your ID> --json`
+- Recommended default initialization driver:
+  `python scripts/bind_project.py --action advance --project_id <Your ID> --budget-seconds 90 --json`
+  This returns structured phase, subphase, short guidance, and approximate wait hints for the main agent.
 - To resume the next initialization stage:
   `python scripts/bind_project.py --action resume --project_id <Your ID>`
 - To wait with a timeout:
@@ -56,6 +59,7 @@ Routine workflow:
 Review policy:
 
 - Treat initialization as a stage-based workflow, not a single blocking command.
+- Prefer `advance` over `resume` during routine initialization because it returns richer structured status for the main agent.
 - Run `analyze_chapter.py` before approving or rewriting when continuity risk is non-trivial.
 - Prefer direct `--content` input for rewrites over temporary files.
 - If a script returns identifiers needed later, memorize them and reuse them explicitly.

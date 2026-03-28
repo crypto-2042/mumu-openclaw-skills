@@ -124,15 +124,20 @@ Use the initialization actions like this:
    ```bash
    python scripts/bind_project.py --action status --project_id <PROJECT_ID> --json
    ```
-3. Resume the next initialization stage:
+3. Recommended default agent entrypoint:
+   ```bash
+   python scripts/bind_project.py --action advance --project_id <PROJECT_ID> --budget-seconds 90 --json
+   ```
+   This returns structured `phase`, `subphase`, `message`, `recommended_wait_seconds`, and `estimated_remaining_minutes` fields. The ETA fields are approximate heuristics, not guarantees.
+4. Resume the next initialization stage directly when you want lower-level control:
    ```bash
    python scripts/bind_project.py --action resume --project_id <PROJECT_ID>
    ```
-4. Wait for readiness with a bounded timeout:
+5. Wait for readiness with a bounded timeout:
    ```bash
    python scripts/bind_project.py --action wait --project_id <PROJECT_ID> --timeout 60 --interval 5 --json
    ```
-5. Check if initialization is fully complete:
+6. Check if initialization is fully complete:
    ```bash
    python scripts/bind_project.py --action ready --project_id <PROJECT_ID>
    ```
@@ -157,6 +162,7 @@ python scripts/bind_project.py --action create \
 Then it keeps resuming initialization until the project is ready:
 ```bash
 python scripts/bind_project.py --action status --project_id <Your ID> --json
+python scripts/bind_project.py --action advance --project_id <Your ID> --budget-seconds 90 --json
 python scripts/bind_project.py --action resume --project_id <Your ID>
 python scripts/bind_project.py --action wait --project_id <Your ID> --timeout 60 --interval 5 --json
 python scripts/bind_project.py --action ready --project_id <Your ID>
