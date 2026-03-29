@@ -6,6 +6,8 @@
 
 This repository provides a set of highly automated **Agentic AI skills** allowing [OpenClaw](https://github.com/openclaw/openclaw), ClawHub, Codex, or Claude Code to manage and write entire novels using the [MuMuAINovel](https://github.com/xiamuceer-j/MuMuAINovel) backend.
 
+Chinese version: [README.zh-CN.md](README.zh-CN.md)
+
 > **🌏 Designed for Deep World-Building**
 > This skill set is heavily optimized for long-form fiction, specifically including structures typical of Chinese Web Novels (Wuxia, Xianxia, Cyberpunk, etc.). The prompt templates inside `SKILL.md` are instructed to handle deep Lore (RAG) and character arcs naturally.
 
@@ -170,6 +172,25 @@ Do not move on to batch generation, chapter auditing, or rewrite flows until the
 - Runtime initialization progress is written to `.mumu_runtime/` and is intentionally ignored by git.
 - If multiple agents share one checkout, give each agent a distinct `MUMU_OWNER_ID`. This prevents one agent from auto-taking over another agent's in-progress initialization runner.
 - `advance` is the recommended high-level initialization entrypoint. `status`, `resume`, and `wait` are lower-level controls for debugging or manual orchestration.
+
+## 👥 OpenClaw Multi-Agent Setup
+
+For OpenClaw, the recommended model is `single-book team = single project_id`. Do not run one shared team across multiple books.
+
+- Lite team: `Showrunner`, `Writer`, `Chief Editor`, `Reader`
+- Standard team: `Showrunner`, `Writer`, `Chief Editor`, `Lore Editor`, `Pacing Editor`, `Reader Panel`
+- Every agent in the team should use its own `MUMU_OWNER_ID`
+- Keep one team bound to one book, then clone the team template for the next book
+
+Detailed operating guidance:
+- [OpenClaw multi-agent guide](docs/openclaw-multi-agent-guide.md)
+- [OpenClaw multi-agent guide (Chinese)](docs/openclaw-multi-agent-guide.zh-CN.md)
+
+Reusable templates:
+- [Lite team template (EN)](examples/openclaw/single-book-team-lite/en/SOUL.md)
+- [Lite team template (ZH)](examples/openclaw/single-book-team-lite/zh-CN/SOUL.md)
+- [Standard team template (EN)](examples/openclaw/single-book-team-standard/en/SOUL.md)
+- [Standard team template (ZH)](examples/openclaw/single-book-team-standard/zh-CN/SOUL.md)
 
 ## 🤖 How the Agent "Lives" (Workflow)
 

@@ -50,6 +50,10 @@ rewrite.md
 *.swp
 .DS_Store
 docs/
+!docs/
+docs/*
+!docs/openclaw-multi-agent-guide.md
+!docs/openclaw-multi-agent-guide.zh-CN.md
 
 # ClawHub release directory
 release/
