@@ -126,7 +126,7 @@ Claude Code does not read OpenClaw skills directly. Its native extension points 
    source .env
    set +a
    ```
-   *Note: OpenClaw can inject skill env vars directly, so `.env` export is mainly for manual shell usage. From version 1.0.4 onwards, agents are expected to memorize their `Project ID` and `Style ID` intrinsically and pass them via the `--project_id` and `--style_id` flags to support concurrent multi-agent executions in the same workspace. Login cookies are kept in-process by default; if your runtime provides a safe writable path, you can opt into persistence with `MUMU_SESSION_FILE=/safe/path/session.json`. If multiple agents share one workspace, set a distinct `MUMU_OWNER_ID` for each agent so `.mumu_runtime/` state files are not treated as reusable by another agent.*
+   *Note: OpenClaw can inject skill env vars directly, so `.env` export is mainly for manual shell usage. From version 1.0.5 onwards, agents are expected to memorize their `Project ID` and `Style ID` intrinsically and pass them via the `--project_id` and `--style_id` flags to support concurrent multi-agent executions in the same workspace. Login cookies are kept in-process by default; if your runtime provides a safe writable path, you can opt into persistence with `MUMU_SESSION_FILE=/safe/path/session.json`. If multiple agents share one workspace, set a distinct `MUMU_OWNER_ID` for each agent so `.mumu_runtime/` state files are not treated as reusable by another agent.*
 
 ## ⏳ Stage-Based Initialization
 
