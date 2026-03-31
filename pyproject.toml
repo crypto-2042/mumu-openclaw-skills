@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mumu-openclaw-skills"
+name = "mumuai-novel-skills"
 version = "1.0.6"
 description = "Auto-Showrunner Agent Skills for MuMuAINovel"
 readme = "README.md"
@@ -21,5 +21,5 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/crypto-2042/mumu-openclaw-skills"
-"Bug Tracker" = "https://github.com/crypto-2042/mumu-openclaw-skills/issues"
+"Homepage" = "https://github.com/crypto-2042/mumuai-novel-skills"
+"Bug Tracker" = "https://github.com/crypto-2042/mumuai-novel-skills/issues"

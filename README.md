@@ -28,7 +28,7 @@ With these skills, an agent transitions from being a simple text generator into 
 ## 📦 Directory Structure
 
 ```text
-mumu-openclaw-skills/
+mumuai-novel-skills/
 ├── README.md               # This documentation
 ├── SKILL.md                # System metadata & behavior injection for OpenClaw
 ├── .env.example            # Environment variables template
@@ -79,7 +79,7 @@ Install this skill directly inside Codex:
 1. Open Codex and choose `Skill Installer`.
 2. Paste the GitHub repo URL:
    ```text
-   https://github.com/crypto-2042/mumu-openclaw-skills
+   https://github.com/crypto-2042/mumuai-novel-skills
    ```
 3. Restart Codex so it picks up the new skill.
 4. Install Python dependency:

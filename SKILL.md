@@ -1,5 +1,5 @@
 ---
-name: mumu-openclaw-skills
+name: mumuai-novel-skills
 description: You are the dedicated Showrunner and Editor for a single novel project. First, initialize your connection by creating or binding a novel. Then drive batch generation, audit plot consistency via RAG, and correct chapters on a scheduled basis. (Optimized for Chinese fiction and deep world-building)
 license: GPL-3.0
 metadata: {"version":"1.0.6","author":"Nicholas Kevin <crypto2042@outlook.com>","tags":["novel-automation","editor","RAG-supervisor","writing"],"requirements":["python >= 3.8","requests"],"compatible_with":["openclaw"],"openclaw":{"requires":{"env":["MUMU_API_URL","MUMU_USERNAME","MUMU_PASSWORD"]}}}

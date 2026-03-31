@@ -50,7 +50,7 @@ source ~/.zprofile
 2. 输入 GitHub 仓库地址：
 
 ```text
-https://github.com/crypto-2042/mumu-openclaw-skills
+https://github.com/crypto-2042/mumuai-novel-skills
 ```
 
 3. 安装后重启 Codex
